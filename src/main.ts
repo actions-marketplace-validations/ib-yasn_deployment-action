@@ -1,5 +1,8 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import { ReposCreateDeploymentResponseData } from "@octokit/types";
+import githubClient from './githubClient';
+import deactivateDeployments from "./deactivateDeployments";
 
 type DeploymentState =
   | "error"
@@ -15,8 +18,7 @@ async function run() {
     const context = github.context;
     const logUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}/checks`;
 
-    const token = core.getInput("token", { required: true });
-    const ref = core.getInput("ref", { required: false }) || context.ref;
+    const ref = core.getInput("ref", { required: false }) || context.payload.pull_request!.head.ref;
     const url = core.getInput("target_url", { required: false }) || logUrl;
     const environment =
       core.getInput("environment", { required: false }) || "production";
@@ -31,11 +33,10 @@ async function run() {
 
     const auto_merge: boolean = autoMergeStringInput === "true";
 
-    const client = new github.GitHub(token, { previews: ["flash", "ant-man"] });
+    await deactivateDeployments(context.repo, environment);
 
-    const deployment = await client.repos.createDeployment({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
+    const deployment = await githubClient.repos.createDeployment({
+      ...context.repo,
       ref: ref,
       required_contexts: [],
       environment,
@@ -43,16 +44,18 @@ async function run() {
       auto_merge,
       description
     });
-
-    await client.repos.createDeploymentStatus({
-      ...context.repo,
-      deployment_id: deployment.data.id,
-      state: initialStatus,
-      log_url: logUrl,
-      environment_url: url
-    });
-
-    core.setOutput("deployment_id", deployment.data.id.toString());
+    if (isSuccessResponse(deployment.data)) {
+      await githubClient.repos.createDeploymentStatus({
+        ...context.repo,
+        deployment_id: deployment.data.id,
+        state: initialStatus,
+        log_url: logUrl,
+        environment_url: url
+      });
+  
+      core.setOutput("deployment_id", deployment.data.id.toString());
+    }
+    
   } catch (error) {
     core.error(error);
     core.setFailed(error.message);
@@ -60,3 +63,9 @@ async function run() {
 }
 
 run();
+
+function isSuccessResponse(
+  object: any
+): object is ReposCreateDeploymentResponseData {
+  return "id" in object;
+}
