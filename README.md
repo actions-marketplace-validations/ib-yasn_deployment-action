@@ -39,49 +39,34 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - uses: chrnorm/deployment-action@releases/v1
-        name: Create GitHub deployment
-        id: deployment
-        with:
-          token: "${{ github.token }}"
-          target_url: http://my-app-url.com
-          environment: production
-        # more steps below where you run your deployment scripts inside the same action
-```
-
-## Notes
-
-Heads up! Currently, there is a GitHub Actions limitation where events fired _inside_ an action will not trigger further workflows. If you use this action in your workflow, it will **not trigger** any "Deployment" workflows. Thanks to @rclayton-the-terrible for finding a workaround for this:
-
-> While not ideal, if you use a token that is not the Action's GITHUB_TOKEN, this will work. I define a secret called GITHUB_DEPLOY_TOKEN and use that for API calls.
-
-A workaround for this is to create the Deployment, perform the deployment steps, and then trigger an action to create a Deployment Status using my other action: [chrnorm/deployment-status](https://github.com/chrnorm/deployment-status).
-
-For example:
-
-```yaml
-name: Deploy
-
-on: [push]
-
-jobs:
-  deploy:
-    name: Deploy my app
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v1
-
       - uses: ib-yasn/deployment-action@releases/v1
         name: Create GitHub deployment
         id: deployment
         with:
           target_url: http://my-app-url.com
-          environment: production
+          environment: staging
         env:
           GITHUB_TOKEN: "${{ github.token }}"
       - name: Deploy my app
         run: |
           # add your deployment code here
+      - name: Update deployment status (success)
+        if: success()
+        uses: ib-yasn/deployment-status@releases/v1
+        with:
+          target_url: http://my-app-url.com
+          state: "success"
+          environment: staging
+        env:
+          GITHUB_TOKEN: "${{ github.token }}"
+          
+      - name: Update deployment status (failure)
+        if: failure()
+        uses: ib-yasn/deployment-status@releases/v1
+        with:
+          target_url: http://my-app-url.com
+          state: "failure"
+          environment: staging
+        env:
+          GITHUB_TOKEN: "${{ github.token }}"
 ```
