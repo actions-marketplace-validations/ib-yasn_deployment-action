@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - uses: chrnorm/deployment-action@releases/v1
+      - uses: ib-yasn/deployment-action@releases/v1
         name: Create GitHub deployment
         id: deployment
         with:
