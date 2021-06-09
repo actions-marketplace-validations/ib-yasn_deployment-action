@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - uses: ib-yasn/deployment-action@releases/v1
+      - uses: ib-yasn/deployment-action@v1
         name: Create GitHub deployment
         id: deployment
         with:
@@ -52,21 +52,24 @@ jobs:
           # add your deployment code here
       - name: Update deployment status (success)
         if: success()
-        uses: ib-yasn/deployment-status@releases/v1
+        uses: ib-yasn/deployment-status@v1
         with:
           target_url: http://my-app-url.com
           state: "success"
           environment: staging
+          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env:
           GITHUB_TOKEN: "${{ github.token }}"
           
       - name: Update deployment status (failure)
         if: failure()
-        uses: ib-yasn/deployment-status@releases/v1
+        uses: ib-yasn/deployment-status@v1
         with:
           target_url: http://my-app-url.com
           state: "failure"
           environment: staging
+          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+
         env:
           GITHUB_TOKEN: "${{ github.token }}"
 ```
