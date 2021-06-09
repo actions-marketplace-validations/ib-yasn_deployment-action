@@ -6,8 +6,7 @@ A GitHub action to create [Deployments](https://developer.github.com/v3/repos/de
 
 | name             | description                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `initial_status` | (Optional) Initial status for the deployment. Must be one of the [accepted strings](https://developer.github.com/v3/repos/deployments/#create-a-deployment-status)                                                                                                                                                                                                                                            |
-| `token`          | GitHub token                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `initial_status` | (Optional) Initial status for the deployment. Must be one of the [accepted strings](https://developer.github.com/v3/repos/deployments/#create-a-deployment-status)                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `target_url`     | (Optional) The target URL. This should be the URL of the app once deployed                                                                                                                                                                                                                                                                                                                                    |
 | `description`    | (Optional) A description to give the environment                                                                                                                                                                                                                                                                                                                                                              |
 | `auto_merge`     | (Optional - default is `false`) Whether to attempt to auto-merge the default branch into the branch that the action is running on if set to `"true"`. More details in the [GitHub deployments API](https://developer.github.com/v3/repos/deployments/#parameters-1). Warning - setting this to `"true"` has caused this action to [fail in some cases](https://github.com/chrnorm/deployment-action/issues/1) |
@@ -19,6 +18,11 @@ A GitHub action to create [Deployments](https://developer.github.com/v3/repos/de
 | --------------- | ------------------------------------------------------ |
 | `deployment_id` | The ID of the deployment as returned by the GitHub API |
 
+## Required Enrivonment variables
+
+| name            | description                                            |
+| --------------- | ------------------------------------------------------ |
+| `GITHUB_TOKEN` | GitHub token |
 ## Example usage
 
 ```yaml
@@ -73,29 +77,11 @@ jobs:
         name: Create GitHub deployment
         id: deployment
         with:
-          token: "${{ github.token }}"
           target_url: http://my-app-url.com
           environment: production
-
+        env:
+          GITHUB_TOKEN: "${{ github.token }}"
       - name: Deploy my app
         run: |
           # add your deployment code here
-
-      - name: Update deployment status (success)
-        if: success()
-        uses: chrnorm/deployment-status@releases/v1
-        with:
-          token: "${{ github.token }}"
-          target_url: http://my-app-url.com
-          state: "success"
-          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
-
-      - name: Update deployment status (failure)
-        if: failure()
-        uses: chrnorm/deployment-status@releases/v1
-        with:
-          token: "${{ github.token }}"
-          target_url: http://my-app-url.com
-          state: "failure"
-          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 ```
